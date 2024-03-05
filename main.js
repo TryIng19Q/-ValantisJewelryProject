@@ -2,12 +2,11 @@ import MD5 from "./md5.js";
 
 const drawFunctions = {
     async drawProducts(productsArray = [], paginationBtnsArray = null, activePaginationBtn) {
-        serverFunction.currentProductArray = productsArray;
-
         // Перебор массива продуктов с дальнейшем добавлением в DOM дерево
-        productsArray.forEach(productInfo => {
-            this.createProductDOMElement(productInfo);
-        });
+        for (let i = 0; i < productsArray.length; i++) {
+            if (i >= 50) return;
+            this.createProductDOMElement(productsArray[i], i);
+        };
 
         if (paginationBtnsArray) {
             paginationBtnsArray.forEach(paginationBtn => {
@@ -17,26 +16,38 @@ const drawFunctions = {
         };
     },
     async drawFilteredProducts(value) {
+        const paginationWrapper = document.querySelector('.pagination-wrapper');
+        const filtredPaginationWrapper = document.querySelector('.filtred-pagination');
         const productsContainer = document.getElementById('product-container');
         productsContainer.innerHTML = '';
+        filtredPaginationWrapper.innerHTML = '';
         
         if (value === '') {
-            const productsArray = await serverFunction.getProductsArray();
+            paginationWrapper.classList.remove('element--disabled');
+            filtredPaginationWrapper.classList.add('element--disabled');
+
+
+            const productsArray = await serverFunction.getProductsArray(serverFunction.currentPage, 50);
             drawFunctions.drawProducts(productsArray);
             return;
+        } else {
+            paginationWrapper.classList.add('element--disabled');
+            filtredPaginationWrapper.classList.remove('element--disabled');
         };
+
 
         const filteredProductArray = (await serverFunction.getFilteredProductsArray('price', Number(value)));
         drawFunctions.drawProducts(filteredProductArray);
     },
-    createProductDOMElement(productInfo) {
+    createProductDOMElement(productInfo, productNumber) {
         // Деструктуризация объекта с информацией о продукте
         const {id, product, brand, price} = productInfo;
 
         const container = document.getElementById('product-container');
 
         // Создание DOM елементов
-        const productWrapper = document.createElement('ui');
+        const productWrapper = document.createElement('ul');
+        const productWrapperNumber = document.createElement('span');
         const productWrapperID = document.createElement('li');
         const productWrapperName = document.createElement('li');
         const productWrapperBrand = document.createElement('li');
@@ -44,18 +55,21 @@ const drawFunctions = {
 
         // Инициализация классов
         productWrapper.classList.add('product-wrapper__item');
+        productWrapperNumber.classList.add('product-wrapper__item-number');
         productWrapperID.classList.add('product-wrapper__id');
         productWrapperName.classList.add('product-wrapper__name');
         productWrapperBrand.classList.add('product-wrapper__brand');
         productWrapperPrice.classList.add('product-wrapper__price');
 
         // Заполнение элементов
+        productWrapperNumber.textContent = productNumber + 1;
         productWrapperID.textContent = id;
         productWrapperName.textContent = product;
         productWrapperBrand.textContent = brand;
         productWrapperPrice.textContent = price + '$';
 
         // Добавление в DOM дерево
+        productWrapper.append(productWrapperNumber);
         productWrapper.append(productWrapperID);
         productWrapper.append(productWrapperName);
         productWrapper.append(productWrapperBrand);
@@ -65,6 +79,7 @@ const drawFunctions = {
     },
 };
 const serverFunction = {
+    currentPage: 1,
     currentProductArray: [],
     lastRequestBody: () => {},
     generateXAuthKey() {
@@ -140,7 +155,17 @@ const serverFunction = {
                 "action": "filter",
                 "params": {[field]: value}
             }),
-        }).then(resolve => (resolve.json())).then(resolve => resolve.result);
+        }).then(resolve => (resolve.json())).then(resolve => resolve.result).catch((err) => {
+            console.error(err);
+            return null;
+        });
+
+        const reloadBtnForm = document.querySelector('.error-wrapper');
+        if (filtredIDsList === null) {
+            reloadBtnForm.classList.remove('element--disabled');
+            this.lastRequestBody = () => this.getFilteredProductsArray(field, value);
+            return;
+        };
 
         const serverAnswer = await fetch('https://api.valantis.store:41000/', {
             headers: {
@@ -152,7 +177,44 @@ const serverFunction = {
                 "action": "get_items",
                 "params": {"ids": filtredIDsList}
             })
-        }).then(resolve => (resolve.json())).then(resolve => resolve.result);;
+        }).then(resolve => (resolve.json())).then(resolve => resolve.result).catch((err) => {
+            console.error(err);
+            return null;
+        });
+
+        if (serverAnswer === null) {
+            reloadBtnForm.classList.remove('element--disabled');
+            this.lastRequestBody = () => this.getFilteredProductsArray(field, value);
+            return;
+        };
+
+        // Создание пагинации равной количеству товаров
+        for (let i = 0; i < serverAnswer.length / 50; i++) {
+            const paginationWrapper = document.querySelector('.filtred-pagination');
+            const paginationBtnWrapper = document.createElement('li');
+            const paginationBtn = document.createElement('a');
+
+            paginationBtn.classList.add('filtred-pagination-btn');
+            paginationBtn.setAttribute('pageNumber', i);
+            paginationBtn.textContent = i + 1;
+
+            if (i == 0) paginationBtn.classList.add('active');
+
+            paginationBtn.addEventListener('click', function() {
+                document.querySelectorAll('.filtred-pagination-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+
+                const productsContainer = document.getElementById('product-container');
+                productsContainer.innerHTML = '';
+
+                drawFunctions.drawProducts(serverAnswer.slice(50 * (i), 50 * (i + 1)));
+            });
+
+            paginationBtnWrapper.append(paginationBtn);
+            paginationWrapper.append(paginationBtnWrapper);
+        };
 
         return serverAnswer;
     },
@@ -168,70 +230,6 @@ const serverFunction = {
 
         return IDsList;
     },
-};
-const filtersInit = function() {
-    const filterId = document.getElementById('filterId'); 
-    const filterName = document.getElementById('filterName'); 
-    const filterBrand = document.getElementById('filterBrand'); 
-    const filterPrice = document.getElementById('filterPrice');
-
-    filterId.addEventListener('click', function() {
-        const productArray = serverFunction.currentProductArray;
-
-        for (let i = 0; i < productArray.length; i++) {
-            for (let j = 0; j < productArray.length; j++) {
-                if (Number(productArray[i].id) < Number(productArray[j].id)) {
-                    const oldValue = productArray[i];
-                    productArray[i] = productArray[j];
-                    productArray[j] = oldValue;
-                };
-            };
-        };
-        console.log(productArray);
-
-        if (this.getAttribute('filtertype') === 'min-to-max') {
-            this.setAttribute('filtertype', 'max-to-min');
-            this.style.transform = "rotate(180deg)";
-        } else if (this.getAttribute('filtertype') === 'max-to-min') {
-            console.log('rotate');
-            this.setAttribute('filtertype', 'min-to-max');
-            this.style.transform = "rotate(0deg)";
-        }
-    });
-
-    filterName.addEventListener('click', function() {
-        if (this.getAttribute('filtertype') === 'min-to-max') {
-            this.setAttribute('filtertype', 'max-to-min');
-            this.style.transform = "rotate(180deg)";
-        } else if (this.getAttribute('filtertype') === 'max-to-min') {
-            console.log('rotate');
-            this.setAttribute('filtertype', 'min-to-max');
-            this.style.transform = "rotate(0deg)";
-        }
-    });
-
-    filterBrand.addEventListener('click', function() {
-        if (this.getAttribute('filtertype') === 'min-to-max') {
-            this.setAttribute('filtertype', 'max-to-min');
-            this.style.transform = "rotate(180deg)";
-        } else if (this.getAttribute('filtertype') === 'max-to-min') {
-            console.log('rotate');
-            this.setAttribute('filtertype', 'min-to-max');
-            this.style.transform = "rotate(0deg)";
-        }
-    });
-
-    filterPrice.addEventListener('click', function() {
-        if (this.getAttribute('filtertype') === 'min-to-max') {
-            this.setAttribute('filtertype', 'max-to-min');
-            this.style.transform = "rotate(180deg)";
-        } else if (this.getAttribute('filtertype') === 'max-to-min') {
-            console.log('rotate');
-            this.setAttribute('filtertype', 'min-to-max');
-            this.style.transform = "rotate(0deg)";
-        }
-    });
-
 };
 const searchFormInit = function() {
     const searchForm = document.getElementById('search-form-input');
@@ -254,6 +252,8 @@ const paginationFormInit = function() {
         paginationBtn.addEventListener('click', async function() {
             // Анимация пагинации
             const currentPage = Number(this.textContent);
+            serverFunction.currentPage = currentPage;
+
             const oldPage = document.querySelector('.active');
             oldPage.classList.remove('active');
             oldPage.classList.remove('disabled');
@@ -296,14 +296,10 @@ const reloadServerRequestInit = function() {
 
 
 ~async function(){
-    // const productsArray = await serverFunction.getProductsArray();
-    // drawFunctions.drawProducts(productsArray);
+    const productsArray = await serverFunction.getProductsArray();
+    drawFunctions.drawProducts(productsArray);
 
-    filtersInit();
     searchFormInit();
     paginationFormInit();
     reloadServerRequestInit();
 }();
-
-
-// всего 8004 продукта

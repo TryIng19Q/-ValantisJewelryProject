@@ -162,7 +162,20 @@ body {
     justify-content: space-between;
     align-items: center;
 
+    position: relative;
     width: 1570px;
+}
+.product-wrapper__item-number {
+    position: absolute;
+    z-index: 10;
+
+    top: 50%;
+    transform: translateY(-50%);
+    left: 13px;
+
+    color: #000;
+    font-size: 20px;
+    font-family: 'Ubuntu-Medium';
 }
 .product-wrapper__item > li {
     display: flex;
@@ -202,18 +215,18 @@ body {
 }
 
 /* Pagination */
-.pagination-wrapper {
+.pagination-wrapper, .filtred-pagination-wrapper {
     margin: 0 auto;
 }
-.pagination {
+.pagination, .filtred-pagination {
     display: inline-block;
     margin: 0 auto;
 }
-.pagination li {
+.pagination li, .filtred-pagination li {
     display: inline;
     text-align: center;
 }
-.pagination a {
+.pagination a, .filtred-pagination a {
     float: left;
     display: block;
     font-size: 16px;
@@ -226,14 +239,14 @@ body {
     border: 1px solid transparent;
     line-height: 1.5;
 }
-.pagination a.active {
+.pagination a.active, .filtred-pagination a.active {
 cursor: default;
 }
-.pagination a:active {
+.pagination a:active, .filtred-pagination a.active {
 outline: none;
 }
 
-.pagination a {
+.pagination a, .filtred-pagination a {
     margin: 0 5px;
     padding: 0;
     width: 30px;
@@ -244,26 +257,14 @@ outline: none;
     border-radius: 100%;
     background-color: #FAA300;
 }
-.pagination a.prev {
-    -moz-border-radius: 50px 0 0 50px;
-    -webkit-border-radius: 50px;
-    border-radius: 50px 0 0 50px;
-    width: 100px;
-}
-.pagination a.next {
-    -moz-border-radius: 0 50px 50px 0;
-    -webkit-border-radius: 0;
-    border-radius: 0 50px 50px 0;
-    width: 100px;
-}
-.pagination a:hover {
+.pagination a:hover, .filtred-pagination a.hover {
     background-color: #FFA500;
 }
-.pagination a.active, .pagination a:active {
+.pagination a.active, .filtred-pagination a.active {
     background-color: #a56c0a;
     border: 1px solid #000;
 }
-.pagination a.disabled {
+.pagination a.disabled, .filtred-pagination a.disabled {
     pointer-events: none;
 }
 
