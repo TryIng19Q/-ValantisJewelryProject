@@ -306,5 +306,5 @@ outline: none;
     transform: rotate(360deg);
 }
 .element--disabled {
-    display: none;
+    display: none !important;
 }

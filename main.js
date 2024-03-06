@@ -20,7 +20,6 @@ const drawFunctions = {
         const filtredPaginationWrapper = document.querySelector('.filtred-pagination');
         const productsContainer = document.getElementById('product-container');
         productsContainer.innerHTML = '';
-        filtredPaginationWrapper.innerHTML = '';
         
         if (value === '') {
             paginationWrapper.classList.remove('element--disabled');
@@ -189,32 +188,42 @@ const serverFunction = {
         };
 
         // Создание пагинации равной количеству товаров
-        for (let i = 0; i < serverAnswer.length / 50; i++) {
-            const paginationWrapper = document.querySelector('.filtred-pagination');
-            const paginationBtnWrapper = document.createElement('li');
-            const paginationBtn = document.createElement('a');
+        // for (let i = 0; i < serverAnswer.length / 50; i++) {
+        //     const paginationWrapper = document.querySelector('.filtred-pagination');
+        //     const paginationBtnWrapper = document.createElement('li');
+        //     const paginationBtn = document.createElement('a');
 
-            paginationBtn.classList.add('filtred-pagination-btn');
-            paginationBtn.setAttribute('pageNumber', i);
-            paginationBtn.textContent = i + 1;
+        //     paginationBtn.classList.add('filtred-pagination-btn');
+        //     paginationBtn.setAttribute('pageNumber', i);
+        //     paginationBtn.textContent = i + 1;
 
-            if (i == 0) paginationBtn.classList.add('active');
+        //     if (i == 0) paginationBtn.classList.add('active');
 
-            paginationBtn.addEventListener('click', function() {
-                document.querySelectorAll('.filtred-pagination-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                this.classList.add('active');
+        //     paginationBtn.addEventListener('click', function() {
+        //         document.querySelectorAll('.filtred-pagination-btn').forEach(btn => {
+        //             btn.classList.remove('active');
+        //         });
+        //         this.classList.add('active');
 
-                const productsContainer = document.getElementById('product-container');
-                productsContainer.innerHTML = '';
+        //         const productsContainer = document.getElementById('product-container');
+        //         productsContainer.innerHTML = '';
 
-                drawFunctions.drawProducts(serverAnswer.slice(50 * (i), 50 * (i + 1)));
-            });
+        //         drawFunctions.drawProducts(serverAnswer.slice(50 * (i), 50 * (i + 1)));
+        //     });
 
-            paginationBtnWrapper.append(paginationBtn);
-            paginationWrapper.append(paginationBtnWrapper);
-        };
+        //     paginationBtnWrapper.append(paginationBtn);
+        //     paginationWrapper.append(paginationBtnWrapper);
+        // };
+        const paginationBtnsArray = document.querySelectorAll('.filtred-pagination-btn');
+        paginationBtnsArray.forEach(paginationBtn => {
+            paginationBtn.classList.add('element--disabled');
+
+            if (Math.ceil(Number(serverAnswer.length) / 50) > Number(paginationBtn.getAttribute('filtredID')) - 1) {
+                paginationBtn.classList.remove('element--disabled');
+            };
+        });
+
+        this.currentProductArray = serverAnswer;
 
         return serverAnswer;
     },
@@ -282,6 +291,43 @@ const paginationFormInit = function() {
         });
     });
 };
+const filtredPaginationFormInit = function() {
+    const paginationBtnsArray = document.querySelectorAll('.filtred-pagination-btn');
+
+    paginationBtnsArray.forEach(paginationBtn => {
+        paginationBtn.addEventListener('click', async function() {
+            // Анимация пагинации
+            const currentPage = Number(this.textContent);
+            serverFunction.currentPage = currentPage;
+
+            const oldPage = document.querySelector('.filtred-pagination a.active');
+            oldPage.classList.remove('active');
+            oldPage.classList.remove('disabled');
+
+            let newPageNumber = currentPage <= 3 ? 1 : currentPage - 3;
+
+            paginationBtnsArray.forEach(paginationBtn => {
+                paginationBtn.setAttribute('filtredID', newPageNumber);
+                paginationBtn.textContent = newPageNumber;
+
+                // Блокировка всех кнопок пока не будет загружена текущая страница товаров
+                paginationBtn.classList.add('disabled');
+
+                newPageNumber++
+            });
+
+            const newPage = document.querySelector(`a[filtredID='${currentPage}']`);
+            newPage.classList.add('active');
+
+            // Логика пагинации
+            const productsContainer = document.getElementById('product-container');
+            productsContainer.innerHTML = '';
+
+            const drawCurrentPageArray = serverFunction.currentProductArray.slice(50 * (currentPage - 1), 50 * (currentPage));
+            drawFunctions.drawProducts(drawCurrentPageArray, paginationBtnsArray, newPage);
+        });
+    });
+};
 const reloadServerRequestInit = function() {
     const reloadBtn = document.getElementById('reload-server-request');
 
@@ -301,5 +347,6 @@ const reloadServerRequestInit = function() {
 
     searchFormInit();
     paginationFormInit();
+    filtredPaginationFormInit()
     reloadServerRequestInit();
 }();
