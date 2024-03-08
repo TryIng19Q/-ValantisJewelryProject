@@ -27,6 +27,7 @@ body {
     flex-flow: column nowrap;
     justify-content: flex-start;
 
+    margin: 0 auto;
     padding: 5px;
 
     font-family: 'Ubuntu-Regular';
@@ -37,7 +38,30 @@ body {
 
 /* Header style */
 .header {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
+}
+.header__selector {
+    height: 35px;
 
+    border: 1px solid #161616;
+    font-family: 'Ubuntu-Medium';
+	font-weight: 400;
+	font-size: 14px;
+	line-height: 19px;
+	color: #000;
+}
+.header__option {
+    height: 35px;
+
+    border: 1px solid #161616;
+    font-family: 'Ubuntu-Medium';
+	font-weight: 400;
+	font-size: 14px;
+	line-height: 19px;
+	color: #000;
 }
 .header__search-form {
     margin: 0;
@@ -218,9 +242,17 @@ body {
 .pagination-wrapper, .filtred-pagination-wrapper {
     margin: 0 auto;
 }
-.pagination, .filtred-pagination {
+.pagination {
     display: inline-block;
     margin: 0 auto;
+}
+.filtred-pagination {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: flex-start;
+
+    margin: 0 auto;
+    width: 270px;
 }
 .pagination li, .filtred-pagination li {
     display: inline;
@@ -256,6 +288,8 @@ outline: none;
     -webkit-border-radius: 100%;
     border-radius: 100%;
     background-color: #FAA300;
+
+    user-select: none;
 }
 .pagination a:hover, .filtred-pagination a.hover {
     background-color: #FFA500;
@@ -269,7 +303,7 @@ outline: none;
 }
 
 /* Error form */
-.error-wrapper {
+.error-wrapper, .message-wrapper {
     position: absolute;
 
     display: flex;
@@ -283,7 +317,10 @@ outline: none;
     top: calc(50% - 100px);
     right: calc(50% - 300px);
 }
-.error__title {
+.message-wrapper {
+    top: 200px;
+}
+.error__title, .message__title {
     margin: 0 0 30px 0;
     text-align: center;
     font-size: 25px;

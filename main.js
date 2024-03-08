@@ -2,6 +2,16 @@ import MD5 from "./md5.js";
 
 const drawFunctions = {
     async drawProducts(productsArray = [], paginationBtnsArray = null, activePaginationBtn) {
+        // Отключения сообщения если массив не пуст
+        if (productsArray.length > 0) {
+            const messageWrapper = document.querySelector('.message-wrapper');
+            messageWrapper.classList.add('element--disabled');
+        };
+
+        // Возможность снова пользоваться инпутом
+        const searchForm = document.getElementById('search-form-input');
+        searchForm.disabled = false;
+
         // Перебор массива продуктов с дальнейшем добавлением в DOM дерево
         for (let i = 0; i < productsArray.length; i++) {
             if (i >= 50) return;
@@ -34,8 +44,10 @@ const drawFunctions = {
             filtredPaginationWrapper.classList.remove('element--disabled');
         };
 
+        // Получения выбранного селектора для последующей фильтрацие среди этого поля
+        let typeSelector = document.querySelector('.header__selector').value;
 
-        const filteredProductArray = (await serverFunction.getFilteredProductsArray('price', Number(value)));
+        const filteredProductArray = (await serverFunction.getFilteredProductsArray(typeSelector, typeSelector == 'price' ? Number(value) : String(value)));
         drawFunctions.drawProducts(filteredProductArray);
     },
     createProductDOMElement(productInfo, productNumber) {
@@ -144,20 +156,24 @@ const serverFunction = {
     },
     async getFilteredProductsArray(field, value) {
         // Запрос на сервер для получения отфильтрованного массива индексов
-        const filtredIDsList = await fetch('https://api.valantis.store:41000/', {
-            headers: {
-                'Content-Type': 'application/json',
-                "X-Auth": this.generateXAuthKey(),
-            },
-            method: "POST",
-            body: JSON.stringify({
-                "action": "filter",
-                "params": {[field]: value}
-            }),
-        }).then(resolve => (resolve.json())).then(resolve => resolve.result).catch((err) => {
-            console.error(err);
-            return null;
-        });
+
+        let filtredIDsList = [value];
+        if (field !== 'id') {
+            filtredIDsList = await fetch('https://api.valantis.store:41000/', {
+                headers: {
+                    'Content-Type': 'application/json',
+                    "X-Auth": this.generateXAuthKey(),
+                },
+                method: "POST",
+                body: JSON.stringify({
+                    "action": "filter",
+                    "params": {[field]: value}
+                }),
+            }).then(resolve => (resolve.json())).then(resolve => resolve.result).catch((err) => {
+                console.error(err);
+                return null;
+            });
+        };
 
         const reloadBtnForm = document.querySelector('.error-wrapper');
         if (filtredIDsList === null) {
@@ -187,33 +203,7 @@ const serverFunction = {
             return;
         };
 
-        // Создание пагинации равной количеству товаров
-        // for (let i = 0; i < serverAnswer.length / 50; i++) {
-        //     const paginationWrapper = document.querySelector('.filtred-pagination');
-        //     const paginationBtnWrapper = document.createElement('li');
-        //     const paginationBtn = document.createElement('a');
-
-        //     paginationBtn.classList.add('filtred-pagination-btn');
-        //     paginationBtn.setAttribute('pageNumber', i);
-        //     paginationBtn.textContent = i + 1;
-
-        //     if (i == 0) paginationBtn.classList.add('active');
-
-        //     paginationBtn.addEventListener('click', function() {
-        //         document.querySelectorAll('.filtred-pagination-btn').forEach(btn => {
-        //             btn.classList.remove('active');
-        //         });
-        //         this.classList.add('active');
-
-        //         const productsContainer = document.getElementById('product-container');
-        //         productsContainer.innerHTML = '';
-
-        //         drawFunctions.drawProducts(serverAnswer.slice(50 * (i), 50 * (i + 1)));
-        //     });
-
-        //     paginationBtnWrapper.append(paginationBtn);
-        //     paginationWrapper.append(paginationBtnWrapper);
-        // };
+        // Отображение нужного колличества кнопок
         const paginationBtnsArray = document.querySelectorAll('.filtred-pagination-btn');
         paginationBtnsArray.forEach(paginationBtn => {
             paginationBtn.classList.add('element--disabled');
@@ -222,6 +212,12 @@ const serverFunction = {
                 paginationBtn.classList.remove('element--disabled');
             };
         });
+
+        // Показ сообщения если массив пуст
+        const messageWrapper = document.querySelector('.message-wrapper');
+        if (serverAnswer.length == 0) {
+            messageWrapper.classList.remove('element--disabled');
+        };
 
         this.currentProductArray = serverAnswer;
 
@@ -242,12 +238,19 @@ const serverFunction = {
 };
 const searchFormInit = function() {
     const searchForm = document.getElementById('search-form-input');
+    const paginationBtnsArray = document.querySelectorAll('.filtred-pagination-btn');
   
     let timer;
     searchForm.addEventListener('input', async() => {
         clearInterval(timer);
 
         timer = setInterval(async() => {
+            for (let i = 0; i < paginationBtnsArray.length; i++) {
+                paginationBtnsArray[i].textContent = i + 1;
+                console.log(i + 1);
+            };
+
+            searchForm.disabled = true;
             drawFunctions.drawFilteredProducts(searchForm.value);
 
             clearInterval(timer);
@@ -259,6 +262,10 @@ const paginationFormInit = function() {
 
     paginationBtnsArray.forEach(paginationBtn => {
         paginationBtn.addEventListener('click', async function() {
+            // Отключение инпута
+            const searchForm = document.getElementById('search-form-input');
+            searchForm.disabled = true;
+
             // Анимация пагинации
             const currentPage = Number(this.textContent);
             serverFunction.currentPage = currentPage;
@@ -312,6 +319,12 @@ const filtredPaginationFormInit = function() {
 
                 // Блокировка всех кнопок пока не будет загружена текущая страница товаров
                 paginationBtn.classList.add('disabled');
+                paginationBtn.classList.remove('element--disabled');
+
+                console.log(`max count pages >>> ${Math.ceil(Number(serverFunction.currentProductArray.length) / 50)} current page >>> ${currentPage}`);
+                if (Math.ceil(Number(serverFunction.currentProductArray.length) / 50) <= Number(paginationBtn.getAttribute('filtredID')) - 1) {
+                    paginationBtn.classList.add('element--disabled');
+                };
 
                 newPageNumber++
             });
@@ -342,8 +355,8 @@ const reloadServerRequestInit = function() {
 
 
 ~async function(){
-    const productsArray = await serverFunction.getProductsArray();
-    drawFunctions.drawProducts(productsArray);
+    // const productsArray = await serverFunction.getProductsArray();
+    // drawFunctions.drawProducts(productsArray);
 
     searchFormInit();
     paginationFormInit();
