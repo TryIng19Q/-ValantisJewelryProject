@@ -119,7 +119,7 @@ const serverFunction = {
             method: "POST",
             body: JSON.stringify({
                 "action": "get_ids",
-                "params": {"offset": startWith, "limit": count}
+                "params": {"offset": startWith * 50, "limit": count}
             }),
         }).then(response => (response.json())).then(response => response.result).catch((err) => {
             console.error(err);
@@ -130,7 +130,7 @@ const serverFunction = {
         const reloadBtnForm = document.querySelector('.error-wrapper');
         if (IDsList === null) {
             reloadBtnForm.classList.remove('element--disabled');
-            this.lastRequestBody = () => this.getProductsArray(startWith, count);
+            this.lastRequestBody = () => this.getProductsArray(startWith * 50, count);
             return;
         };
 

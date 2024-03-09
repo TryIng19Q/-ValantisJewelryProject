@@ -42,6 +42,8 @@ body {
     flex-flow: row nowrap;
     justify-content: center;
     align-items: center;
+
+    width: 1570px;
 }
 .header__selector {
     height: 35px;
@@ -72,16 +74,15 @@ body {
 
 	border: 1px solid #161616;
     font-family: 'Ubuntu-Medium';
-	font-weight: 400;
+	font-weight: 900;
 	font-size: 14px;
 	line-height: 19px;
 	color: #000;
 }
 .header__search-form::placeholder {
-    font-family: 'Ubuntu-Medium';
-	font-weight: 400;
+    font-family: 'Ubuntu-Regular';
+	font-weight: 900;
 	font-size: 14px;
-	line-height: 19px;
 	color: #000;
 }
 
@@ -107,7 +108,7 @@ body {
 
     border: 1px solid #161616;
 
-    transition: transform .3s linear, filter .3s linear;
+    transition: background-color .3s linear;
 }
 .product-filter__id {
     background-color: #f05560;
@@ -179,6 +180,7 @@ body {
     margin: 0 0 10px 0;
     height: 640px;
     overflow-y: scroll;
+    overflow-x: hidden;
 }
 .product-wrapper__item {
     display: flex;
@@ -188,6 +190,9 @@ body {
 
     position: relative;
     width: 1570px;
+}
+.product-wrapper__item:nth-child(even) {
+    background-color: #66656593;
 }
 .product-wrapper__item-number {
     position: absolute;
@@ -216,11 +221,11 @@ body {
 
     transition: transform .3s linear, filter .3s linear;
 
-    background-color: #a8a8a8;
+    background-color: #a8a8a893;
 }
 .product-wrapper__id {
     font-size: 12px;
-    color: #000;
+    color: #FFF;
 }
 .product-wrapper__name {
     text-align: center;
@@ -270,6 +275,8 @@ body {
     margin-left: -1px;
     border: 1px solid transparent;
     line-height: 1.5;
+
+    transition: background-color .2s linear;
 }
 .pagination a.active, .filtred-pagination a.active {
 cursor: default;
@@ -334,9 +341,20 @@ outline: none;
 }
 
 /* Animation */
-.product-filters > li:hover {
-    transform: scale(1.02);
-    filter: grayscale(0.1);
+.product-filter__id:hover {
+    background-color: #c9444d;
+}
+.product-filter__name:hover {
+    background-color: #e49503;
+}
+.product-filter__brand:hover {
+    background-color: #d45833;
+}
+.product-filter__price:hover {
+    background-color: #0291c5;
+}
+.pagination a:hover, .filtred-pagination a:hover {
+    background-color: #b67804;
 }
 .error__reload-btn:hover > svg {
     fill: #a56c0a;
