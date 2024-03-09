@@ -105,6 +105,7 @@ const serverFunction = {
     // Генератор ключа для авторизации на сервере
     generateXAuthKey() {
         const date = new Date();
+        // Возвращает ключ в виде хэша типа (958574504f86b67a1691db9c6a02807d)
         return MD5('Valantis_' + date.getFullYear() + (date.getMonth() > 9 ? date.getMonth() + 1 : '0' + (date.getMonth() + 1)) + (date.getDate() > 9 ? date.getDate() : '0' + date.getDate()));
     },
     // Получение массива с продуктами
