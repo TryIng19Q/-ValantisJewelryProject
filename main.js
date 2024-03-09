@@ -1,6 +1,8 @@
+// Импорт функции для кеширования ключа
 import MD5 from "./md5.js";
 
 const drawFunctions = {
+    // Функция для отрисовки целых массивов
     async drawProducts(productsArray = [], paginationBtnsArray = null, activePaginationBtn) {
         // Отключения сообщения если массив не пуст
         if (productsArray.length > 0) {
@@ -18,6 +20,7 @@ const drawFunctions = {
             this.createProductDOMElement(productsArray[i], i);
         };
 
+        // Разблокировка всех кнопок кроме той которая уже активна
         if (paginationBtnsArray) {
             paginationBtnsArray.forEach(paginationBtn => {
                 paginationBtn.classList.remove('disabled');
@@ -29,8 +32,12 @@ const drawFunctions = {
         const paginationWrapper = document.querySelector('.pagination-wrapper');
         const filtredPaginationWrapper = document.querySelector('.filtred-pagination');
         const productsContainer = document.getElementById('product-container');
+
+        // Очистка контеннера для дальнейшего заполнения новыми продуктами
         productsContainer.innerHTML = '';
         
+        // Если запрос инпута пуст показ не фильтрованной страницы 
+        // Если есть информация дальнейший поиск совпадений
         if (value === '') {
             paginationWrapper.classList.remove('element--disabled');
             filtredPaginationWrapper.classList.add('element--disabled');
@@ -47,6 +54,7 @@ const drawFunctions = {
         // Получения выбранного селектора для последующей фильтрацие среди этого поля
         let typeSelector = document.querySelector('.header__selector').value;
 
+        // Получение отфильтрованного массива и его отрисовка
         const filteredProductArray = (await serverFunction.getFilteredProductsArray(typeSelector, typeSelector == 'price' ? Number(value) : String(value)));
         drawFunctions.drawProducts(filteredProductArray);
     },
@@ -92,11 +100,14 @@ const drawFunctions = {
 const serverFunction = {
     currentPage: 1,
     currentProductArray: [],
+    // Если сервер вернул ошибку поле запоминает функцию с ее аргументами с дальнейшего повтора
     lastRequestBody: () => {},
+    // Генератор ключа для авторизации на сервере
     generateXAuthKey() {
         const date = new Date();
         return MD5('Valantis_' + date.getFullYear() + (date.getMonth() > 9 ? date.getMonth() + 1 : '0' + (date.getMonth() + 1)) + (date.getDate() > 9 ? date.getDate() : '0' + date.getDate()));
     },
+    // Получение массива с продуктами
     async getProductsArray(startWith = 0, count = 50) {
         // Запрос на сервер для получения массива индексов
         const IDsList = await fetch('https://api.valantis.store:41000/', {
@@ -114,6 +125,7 @@ const serverFunction = {
             return null;
         });
 
+        // Если IDsList равен null выход из функции и ее запись в переменную this.lastRequestBody
         const reloadBtnForm = document.querySelector('.error-wrapper');
         if (IDsList === null) {
             reloadBtnForm.classList.remove('element--disabled');
@@ -137,6 +149,7 @@ const serverFunction = {
             return null;
         });
 
+        // Если serverAnswer равен null выход из функции и ее запись в переменную this.lastRequestBody
         if (serverAnswer === null) {
             reloadBtnForm.classList.remove('element--disabled');
             this.lastRequestBody = () => this.getProductsArray(startWith, count);
@@ -154,10 +167,14 @@ const serverFunction = {
 
         return serverAnswer;
     },
+    // Получение отфильтрованного массива
     async getFilteredProductsArray(field, value) {
         // Запрос на сервер для получения отфильтрованного массива индексов
 
         let filtredIDsList = [value];
+
+        // Если поля поика равно id отправляется обычный запрос 
+        // Иначе поиск по значению product, brand, price
         if (field !== 'id') {
             filtredIDsList = await fetch('https://api.valantis.store:41000/', {
                 headers: {
@@ -176,6 +193,8 @@ const serverFunction = {
         };
 
         const reloadBtnForm = document.querySelector('.error-wrapper');
+
+        // Если filtredIDsList равен null выход из функции и ее запись в переменную this.lastRequestBody
         if (filtredIDsList === null) {
             reloadBtnForm.classList.remove('element--disabled');
             this.lastRequestBody = () => this.getFilteredProductsArray(field, value);
@@ -197,6 +216,7 @@ const serverFunction = {
             return null;
         });
 
+        // Если serverAnswer равен null выход из функции и ее запись в переменную this.lastRequestBody
         if (serverAnswer === null) {
             reloadBtnForm.classList.remove('element--disabled');
             this.lastRequestBody = () => this.getFilteredProductsArray(field, value);
@@ -223,34 +243,27 @@ const serverFunction = {
 
         return serverAnswer;
     },
-    async reloadServerRequest(requestData) {
-        const IDsList = await fetch('https://api.valantis.store:41000/', {
-            headers: {
-                'Content-Type': 'application/json',
-                "X-Auth": this.generateXAuthKey(),
-            },
-            method: "POST",
-            body: JSON.stringify(requestData),
-        }).then(resolve => (resolve.json())).then(resolve => resolve.result);
-
-        return IDsList;
-    },
 };
 const searchFormInit = function() {
     const searchForm = document.getElementById('search-form-input');
     const paginationBtnsArray = document.querySelectorAll('.filtred-pagination-btn');
   
+    // Если пользователь не вводит текст в течение 2с запрос отправляется на сервер
     let timer;
     searchForm.addEventListener('input', async() => {
         clearInterval(timer);
 
         timer = setInterval(async() => {
+            // Сброс нумерации кнопок 
             for (let i = 0; i < paginationBtnsArray.length; i++) {
                 paginationBtnsArray[i].textContent = i + 1;
                 console.log(i + 1);
             };
 
+            // Блокировка инпута для избежания лишних запросов
             searchForm.disabled = true;
+
+            // Запрос на сервер и дальнейшая отрисовка отфильтрованного массива продуктов
             drawFunctions.drawFilteredProducts(searchForm.value);
 
             clearInterval(timer);
@@ -321,7 +334,7 @@ const filtredPaginationFormInit = function() {
                 paginationBtn.classList.add('disabled');
                 paginationBtn.classList.remove('element--disabled');
 
-                console.log(`max count pages >>> ${Math.ceil(Number(serverFunction.currentProductArray.length) / 50)} current page >>> ${currentPage}`);
+                // Если длинна массива деленая на 50 меньше чем нумерация кнопки, кнопка не показывается
                 if (Math.ceil(Number(serverFunction.currentProductArray.length) / 50) <= Number(paginationBtn.getAttribute('filtredID')) - 1) {
                     paginationBtn.classList.add('element--disabled');
                 };
@@ -344,20 +357,25 @@ const filtredPaginationFormInit = function() {
 const reloadServerRequestInit = function() {
     const reloadBtn = document.getElementById('reload-server-request');
 
+    // При нажатии на кнопку повторяется последний записанный запрос на сервер
     reloadBtn.addEventListener('click', async() => {
+        // Спрятать кнопку
         const reloadBtnForm = document.querySelector('.error-wrapper');
         reloadBtnForm.classList.add('element--disabled');
 
+        // Последний запрос и его отрисовка
         const productsArray = await serverFunction.lastRequestBody();
         drawFunctions.drawProducts(productsArray);
     });
 };
 
-
+// Инициализация программы
 ~async function(){
-    // const productsArray = await serverFunction.getProductsArray();
-    // drawFunctions.drawProducts(productsArray);
+    // Отрисовка первых 50 продуктов
+    const productsArray = await serverFunction.getProductsArray();
+    drawFunctions.drawProducts(productsArray);
 
+    // Инициализация логики
     searchFormInit();
     paginationFormInit();
     filtredPaginationFormInit()
